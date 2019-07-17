@@ -1,0 +1,9 @@
+etcd_interface: ens192
+kubernetes_common_primary_interface: ens192
+kubernetes_cni_plugin: calico
+kubernetes_common_api_ip: "replaceme_ip"
+kubernetes_common_api_fqdn: "replaceme_hostname"
+kubernetes_common_kubeadm_config:
+  networking:
+    podSubnet: "192.162.0.0/16"
+kubernetes_version: "1.15.0-00"

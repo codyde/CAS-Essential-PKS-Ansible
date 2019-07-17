@@ -1,0 +1,41 @@
+- name: NGINX Load Balancer Prep for Essential PKS
+  hosts: all
+  connection: ssh
+  gather_facts: yes
+  become: yes
+  become_user: root
+  become_method: sudo
+
+  pre_tasks:
+    - name: Gather facts from all hosts
+      setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: True
+      with_items: "{{ groups['masters'] }}"
+
+  tasks:
+    - name: add nginx  development Repo
+      command: add-apt-repository -y ppa:nginx/development
+
+    - name: Install NGINX
+      apt:
+        name: nginx
+
+    - name: copy nginx config
+      copy:
+        src: nginx.conf
+        dest: /etc/nginx/nginx.conf
+        force: yes
+
+    - name: create lb config directory
+      file:
+        path: /etc/nginx/tcpconf.d
+        state: directory
+
+    - name: drop the lb.conf template
+      template:
+        src: lbtemp.conf
+        dest: /etc/nginx/tcpconf.d/lb.conf
+
+    - name: nginx restarted
+      command: service nginx restart

@@ -1,0 +1,120 @@
+formatVersion: 1
+name: "Essential PKS on vSphere"
+version: 1
+inputs:
+  workerCount:
+    type: integer
+resources:
+  epks-prep:
+    type: Cloud.Ansible
+    dependsOn:
+      - primary-master
+      - second-master
+      - worker-ansible
+    properties:
+      host: '${resource.nginx.*}'
+      osType: linux
+      account: Ansible-OSS
+      username: root
+      inventoryFile: /etc/ansible/hosts
+      privateKeyFile: ~/.ssh/id_rsa
+      groups:
+        - epksprep
+      playbooks:
+        provision:
+          - /root/playbooks/nginxprep.yml
+  primary-master:
+    type: Cloud.Ansible
+    properties:
+      host: '${resource.pmaster.*}'
+      osType: linux
+      account: Ansible-OSS
+      username: root
+      inventoryFile: /etc/ansible/hosts
+      privateKeyFile: ~/.ssh/id_rsa
+      groups:
+        - masters
+        - primary_master
+        - etcd
+  second-master:
+    type: Cloud.Ansible
+    properties:
+      host: '${resource.smaster.*}'
+      count: 2
+      osType: linux
+      account: Ansible-OSS
+      username: root
+      inventoryFile: /etc/ansible/hosts
+      privateKeyFile: ~/.ssh/id_rsa
+      groups:
+        - masters
+        - etcd
+  worker-ansible:
+    type: Cloud.Ansible
+    properties:
+      count: '${input.workerCount}'
+      host: '${resource.worker.*}'
+      osType: linux
+      account: Ansible-OSS
+      username: root
+      inventoryFile: /etc/ansible/hosts
+      privateKeyFile: ~/.ssh/id_rsa
+      groups:
+        - nodes
+  nginx:
+    type: Cloud.Machine
+    properties:
+      name: nginx
+      folderName: k8s
+      image: ubuntu
+      flavor: medium
+      constraints:
+        - tag: 'env:vsphere'
+      networks:
+        - network: '${resource.Cloud_Network_1.id}'
+          assignment: dynamic
+  pmaster:
+    type: Cloud.Machine
+    name: master
+    properties:
+      folderName: k8s
+      image: ubuntu
+      flavor: medium
+      constraints:
+        - tag: 'env:vsphere'
+      name: pmaster
+      networks:
+        - network: '${resource.Cloud_Network_1.id}'
+          assignment: dynamic
+  smaster:
+    type: Cloud.Machine
+    properties:
+      count: 2
+      folderName: k8s
+      image: ubuntu
+      flavor: medium
+      constraints:
+        - tag: 'env:vsphere'
+      name: smaster
+      networks:
+        - network: '${resource.Cloud_Network_1.id}'
+          assignment: dynamic
+  worker:
+    type: Cloud.Machine
+    properties:
+      folderName: k8s
+      name: worker
+      count: '${input.workerCount}'
+      image: ubuntu
+      flavor: medium
+      constraints:
+        - tag: 'env:vsphere'
+      networks:
+        - network: '${resource.Cloud_Network_1.id}'
+          assignment: dynamic
+  Cloud_Network_1:
+    type: Cloud.Network
+    properties:
+      networkType: existing
+      constraints:
+        - tag: 'net:vm'
